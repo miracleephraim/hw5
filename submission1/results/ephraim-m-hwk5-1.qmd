@@ -14,7 +14,7 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata)
 library(modelsummary)
 library(fixest)
-load("C:/Users/mirac/Documents/GitHub/econ470_ma/hw5/submission1/results/hw_workspace5.Rdata")
+load("C:/Users/mirac/Documents/GitHub/econ470_ma/hw5/submission2/results/hw_workspace5.Rdata")
 
 
 

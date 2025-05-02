@@ -23,16 +23,17 @@ load("C:/Users/mirac/Documents/GitHub/econ470_ma/hw5/submission2/results/hw_work
 Plot the share of the adult population with direct purchase health insurance over time.
 
 ```{r, echo=FALSE}
+#| label: fig-q1
+#| fig-cap: "Average Share of Population with Direct Purchase Health Insurance"
 
+q1
 ```
 
 ## Question 2
 
 Discuss the reduction in direct purchase health insurance in later years. Can you list a couple of policies that might have affected the success of the direct purchase insurance market?
 
-```{r, echo=FALSE}
-
-```
+Following 2016, there is a continous decrease in the share of the populaiton directly purchasing health insurance, likely due to the ACA. After 2016, the elimination of the penalty on those without health insurance, which likely reduced the incentive to purchase health insurance. In these latter years, the Trump administration ended federal cost-sharing reduction payments,  which also de-incentvized direct purchase as premiums increases for those without subsidies [(1,](https://www.kff.org/private-insurance/issue-brief/as-aca-marketplace-enrollment-reaches-record-high-fewer-are-buying-individual-market-coverage-elsewhere/#:~:text=During%20this%20period%20of%20decreasing,Figure%201) [2).](https://usafacts.org/articles/affordable-care-act-and-data-who-insured-and-who-isnt/#:~:text=Individual%20mandate,Employer%20mandate)
 
 
 ## Question 3
