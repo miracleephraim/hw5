@@ -6,12 +6,13 @@ format:
     documentclass: article
 ---
 
-**Github Repository:** (https://github.com/miracleephraim/hw5.git)[https://github.com/miracleephraim/hw5.git]
+**Github Repository:** [https://github.com/miracleephraim/hw5.git](https://github.com/miracleephraim/hw5.git)
 
 ```{r setup, include=FALSE}
 
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata)
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, 
+               data.table, gdata, scales, kableExtra, modelsummary, fixest)
 
 load("C:/Users/mirac/Documents/GitHub/econ470_ma/hw5/submission2/results/hw_workspace5.Rdata")
 
@@ -20,7 +21,11 @@ load("C:/Users/mirac/Documents/GitHub/econ470_ma/hw5/submission2/results/hw_work
 ```
 
 ## Question 1
-Plot the share of the adult population with direct purchase health insurance over time.
+
+Plot the share of insured individuals with direct purchase health insurance over time. 
+
+
+@fig-q1 displays the share of the adult population directly purchasing their health insurance over time. Rates were greatest from 2013-2015, after which rates decreased. The decreasing trend remained to the end of the study period. 
 
 ```{r, echo=FALSE}
 #| label: fig-q1
@@ -29,80 +34,171 @@ Plot the share of the adult population with direct purchase health insurance ove
 q1
 ```
 
+
+\newpage
 ## Question 2
 
 Discuss the reduction in direct purchase health insurance in later years. Can you list a couple of policies that might have affected the success of the direct purchase insurance market?
 
+
 Following 2016, there is a continous decrease in the share of the populaiton directly purchasing health insurance, likely due to the ACA. After 2016, the elimination of the penalty on those without health insurance, which likely reduced the incentive to purchase health insurance. In these latter years, the Trump administration ended federal cost-sharing reduction payments,  which also de-incentvized direct purchase as premiums increases for those without subsidies [(1,](https://www.kff.org/private-insurance/issue-brief/as-aca-marketplace-enrollment-reaches-record-high-fewer-are-buying-individual-market-coverage-elsewhere/#:~:text=During%20this%20period%20of%20decreasing,Figure%201) [2).](https://usafacts.org/articles/affordable-care-act-and-data-who-insured-and-who-isnt/#:~:text=Individual%20mandate,Employer%20mandate)
 
-
+\newpage
 ## Question 3
 
 Plot the share of the adult population with Medicaid over time.
 
-```{r, echo=FALSE}
 
+@fig-q3 displays the share of the adult population with Medicaid over time. Rates were greatest from 2013-2016, largely due to the ACA and states' expansion. The share began decreasing post-206, but at a relatively slow rate.
+
+```{r, echo=FALSE}
+#| label: fig-q3
+#| fig-cap: "Average Share of Population with Medicaid"
+
+q3
 ```
 
-
+\newpage
 ## Question 4
 
 Plot the share of uninsured over time, separately by states that expanded Medicaid in 2014 versus those that did not. Drop all states that expanded after 2014.
 
+
+@fig-q4 displays the share of the adult ppopulation, stratified by expansion status as of 2014. While trends are relatively similar in proprotions of uninsured, uninsurance rates were consistently greater in non-expansion status as compared to expansion states. This trend remains even before ACA implementation, suggesting other differentiaing factors between these groups contributing to observed rates. 
+
 ```{r, echo=FALSE}
+#| label: fig-q4
+#| fig-cap: "Average Share of Population with No Health Insurance, by State Expansion Status"
+
+q4_plot
 
 ```
 
-
+\newpage
 ## Question 5
-
 
 Calculate the average percent of uninsured individuals in 2012 and 2015, separately for expansion and non-expansion states. Present your results in a basic 2x2 DD table.
 
-```{r, echo=FALSE}
+```{r, include =FALSE}
+
+
+as_typst_table <- function(df) {
+  typst_table <- paste0(
+    "#table(", 
+    paste(names(df), collapse = ", "), 
+    ")\n",
+    paste(apply(df, 1, function(row) paste(row, collapse = ", ")), collapse = "\n")
+  )
+  typst_table
+}
+
+cat(as_typst_table(dd.table))
 
 ```
 
 
+| Group | Pre-Period (2012) | Post-Period (2015) |
+| -------- | ------- | -------- |
+|Expansion States | 17.4% | 10.3% |
+|Non-Expansion States | 21.5% | 15.8% |
+
+\newpage
 ## Question 6
 
 Estimate the effect of Medicaid expansion on the uninsurance rate using a standard DD regression estimator, again focusing only on states that expanded in 2014 versus those that never expanded.
 
 ```{r, echo=FALSE}
+#| label: tbl-ddregs
+#| tbl-cap: "DD Estimates for Medicaid Expansion"
+
+
+modelsummary(list("DD (2014)"=dd),
+             shape=term + statistic ~ model, 
+             gof_map=NA,
+             coef_omit='Intercept',
+             vcov=~State,
+             stars = TRUE,
+             coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
+                      "treat" = "Post x Expand")
+         )
+
 
 ```
 
-
+\newpage
 ## Question 7
 
 Include state and year fixed effects in your estimates. Try using the lfe or fixest package to estimate this instead of directly including the fixed effects.
 
 ```{r, echo=FALSE}
+#| label: tbl-ddregs2
+#| tbl-cap: "DD Estimates for Medicaid Expansion with TWFE"
+
+msummary(list("DD"=dd, "TWFE"=dd.fe),
+         shape=term + statistic ~ model, 
+         gof_map=NA,
+         vcov=~State,
+         stars = TRUE,
+        coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
+                      "treat" = "Post x Expand")
+         
+         )
 
 ```
 
 
+\newpage
 ## Question 8
 
 Repeat the analysis in question 7 but include all states (even those that expanded after 2014). Are your results different? If so, why?
 
+Results do vary for the interaction term, depending on when states expanded, due to the differences in reference point. 
 ```{r, echo=FALSE}
+#| label: tbl-ddregs3
+#| tbl-cap: "DD Estimates for Medicaid Expansion with Staggered Treatment"
+
+msummary(list("DD"=dd, "TWFE (2014)"=dd.fe, "TWFE (all)"=dd.fe2),
+         shape=term + statistic ~ model, 
+         gof_map=NA,
+         coef_omit='Intercept',
+         vcov=~State,
+         stars = TRUE,
+        coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
+                      "treat" = "Post x Expand"
+         ))
 
 ```
 
-
+\newpage
 ## Question 9
 
 Provide an “event study” graph showing the effects of Medicaid expansion in each year. Use the specification that includes state and year fixed effects, limited to states that expanded in 2014 or never expanded.
 
 ```{r, echo=FALSE}
+#| label: fig-eventstudy1
+#| fig-cap: "Event Study with Common Treatment Time"
+
+iplot(mod.twfe, 
+      xlab = 'Time to treatment',
+      main = ' ',
+      ref.line = TRUE)
 
 ```
 
+\newpage
 ## Question 10
 
 Repeat part 9 but again include states that expanded after 2014. Note: this is tricky…you need to put all states onto “event time” to create this graph.
 
 ```{r, echo=FALSE}
+#| label: fig-eventstudy2
+#| fig-cap: "Event Study with Staggered Treatment"
+
+iplot(
+  mod.twfe2,
+  xlab = "Years from Medicaid Expansion",
+  main = " ",
+  ref.line = TRUE
+)
 
 ```

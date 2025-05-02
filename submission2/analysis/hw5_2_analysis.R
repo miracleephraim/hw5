@@ -45,18 +45,20 @@ q4_data <- df %>%
 
 
 q4_plot <- ggplot(aes(x=year, y=avg_unins, color=factor(expand_2014), group=factor(expand_2014)), data = q4_data) +
-    geom_line() +
-    labs(color="Expand 2014") +
-    xlab("Year") +
-    ylab("Average Uninsured Share") +
-    ggtitle("Average Uninsured Share by Expansion Status (2014)")
+  geom_line() +
+  labs(color="Expansion Status (2014)") +
+  xlab("Year") +
+  ylab("Average Uninsured Share") +
+  ggtitle("Average Uninsured Share by Expansion Status (2014)") +
+  scale_color_manual(name = "Expansion Status (2014)", labels = c("Non-Expansion", "Expansion"), values = c("red", "blue"))
 
 # question 5
 
-df %>%
+dd.table <- df %>%
     filter((year == 2012) | (year == 2015)) %>%
     mutate(unins = uninsured/adult_pop) %>%
-    group_by(year, expand) %>%
+    filter(!is.na(expand_ever)) %>%
+    group_by(year, expand_ever) %>%
     summarise(avg_unins = mean(unins, na.rm=TRUE)) 
 
 # question 6
@@ -90,18 +92,21 @@ msummary(list("DD"=dd, "TWFE"=dd.fe),
 reg.df2 <- df %>% 
   mutate(perc_unins=uninsured/adult_pop,
          post = (year>=2014), 
-         treat=post*expand_ever)
+         treat=post*expand)
 
 dd2 <- lm(perc_unins ~ post + expand_ever + post*expand_ever, data=reg.df2)
 dd.fe2 <- feols(perc_unins ~ treat | State + year, data=reg.df2)
 
-msummary(list("DD (2014)"=dd, "TWFE (2014)"=dd.fe, "DD (all)"=dd2, "TWFE (all)"=dd.fe2),
+msummary(list("DD"=dd, "TWFE (2014)"=dd.fe, "TWFE (all)"=dd.fe2),
          shape=term + statistic ~ model, 
          gof_map=NA,
          coef_omit='Intercept',
          vcov=~State,
-         stars = TRUE
-         )
+         stars = TRUE,
+         coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
+                      "postTRUE × expand_everTRUE" = "Post x Expand", "treat" = "Post x Expand"
+         ))
+
 
 # question 9
 
@@ -111,89 +116,29 @@ mod.twfe <- feols(perc_unins~i(year, expand_ever, ref=2013) | State + year,
 
 iplot(mod.twfe, 
       xlab = 'Time to treatment',
-      main = 'Event study')
+      main = 'Event study',
+      ref.line = TRUE)
 
 # question 10
 
-# testing method, will check tmr if all this was necessary
-reg.df14 <- df %>% filter(expand_year==2014 | is.na(expand_year), !is.na(expand_ever)) %>%
-  mutate(perc_unins=uninsured/adult_pop,
-         post = (year>=2014), 
-         treat=post*expand_ever)
-reg.df15 <- df %>% filter(expand_year==2015 | is.na(expand_year), !is.na(expand_ever)) %>%
-  mutate(perc_unins=uninsured/adult_pop,
-         post = (year>=2015), 
-         treat=post*expand_ever)
-reg.df16 <- df %>% filter(expand_year==2016 | is.na(expand_year), !is.na(expand_ever)) %>%
-  mutate(perc_unins=uninsured/adult_pop,
-         post = (year>=2016), 
-         treat=post*expand_ever)
-reg.df17 <- df %>% filter(expand_year==2017 | is.na(expand_year), !is.na(expand_ever)) %>%
-  mutate(perc_unins=uninsured/adult_pop,
-         post = (year>=2017), 
-         treat=post*expand_ever)
-reg.df18 <- df %>% filter(expand_year==2018 | is.na(expand_year), !is.na(expand_ever)) %>%
-  mutate(perc_unins=uninsured/adult_pop,
-         post = (year>=2019), 
-         treat=post*expand_ever)
-
-# alt
-
-reg.dfall <- df %>%
-  mutate(event_time = year - expand_year, # Calculate event time
-         perc_unins = uninsured / adult_pop) %>% # Calculate uninsured percentage
-  group_by(event_time) %>% # Group by event time
-  summarise(avg_unins = mean(perc_unins, na.rm = TRUE)) # Calculate average uninsured share
-
-mod.twfe <- feols(perc_unins~i(year, expand_ever, ref=2013) | State + year,
-                  cluster=~State,
-                  data=reg.df)
-
-iplot(mod.twfe, 
-      xlab = 'Time to treatment',
-      main = 'Event study')
-
-# Plot the event study
-event_study_plot <- ggplot(reg.dfall, aes(x = event_time, y = avg_unins)) +
-  geom_line() +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "red") + # Mark expansion year
-  xlab("Event Time (Years from Expansion)") +
-  ylab("Average Uninsured Share") +
-  ggtitle("Event Study: Effects of Medicaid Expansion on Uninsured Share") +
-  theme_minimal()
-
-print(event_study_plot)
-
-# alt again
-
-reg.dfall2 <- df %>%
-  filter(!is.na(expand)) %>%  # Only keep expansion states (for event time)
-  mutate(
+reg.data2 <- df %>%
+  mutate(time_to_treat = ifelse(expand_ever==TRUE,(year-expand_year), -1),
+    time_to_treat2 = ifelse(time_to_treat<(-4),-4,time_to_treat),
     perc_unins = uninsured / adult_pop,
     event_time = year - expand_year
-  )
-
+  ) 
 
 mod.twfe2 <- feols(
-  perc_unins ~ i(event_time, ref = -1) | State + year,
+  perc_unins ~ i(time_to_treat2, ref = -1) | State + year,
   cluster = ~State,
-  data = reg.dfall2
+  data = reg.data2
 )
-
 
 iplot(
   mod.twfe2,
   xlab = "Years from Medicaid Expansion",
-  main = "Event Study: Uninsured Rate Response to Medicaid Expansion"
+  main = "Event Study: Uninsured Rate Response to Medicaid Expansion",
+  ref.line = TRUE
 )
-
-reg.data2 <- df %>%
-  mutate(time_to_treat  = ifelse(expand_ever==TRUE, year-expand_year, -1),
-    time_to_treat =iflese(time_to_treat<-4,-4,time_to_treat))
-
-
-mod.twfe3 <- feols(perc_unins~i(time_to_treat, expand_ever, ref=-1 | State + year))
-
-
 
 save.image("C:/Users/mirac/Documents/GitHub/econ470_ma/hw5/submission2/results/hw_workspace5.Rdata")
